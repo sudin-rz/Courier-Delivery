@@ -1,0 +1,197 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+{% block head %}
+<style>
+    .photo {
+        object-fit: cover;
+    }
+
+    .photo-blank {
+        border: 2px dashed #dfdfdf;
+        height: 130px;
+        width: 130px;
+        border-radius: 5px;
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        padding: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block main %}
+<!-- JOB DESCRIPTION -->
+<div class="media mb-4">
+    <img src="{{ job.photo.url }}" class="rounded-lg mr-3" width="150" height="150">
+    <div class="media-body">
+
+        {% if job.status == 'processing' %}
+        <form  method="POST" class="float-right">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning"> Cancel Job</button>
+        </form>
+        {% endif %}
+
+
+
+
+        <h4>{{ job.name }}</h4>
+        <p class="text-secondary">{{ job.description }}</p>
+        <div class="row">
+            <div class="col-lg-3">
+                <small class="text-secondary"> CATEGORY </small><br>
+                <span><b>{{ job.category.name }}</b></span>
+            </div>
+            <div class="col-lg-3">
+                <small class="text-secondary"> SIZE </small><br>
+                <span><b>{{ job.get_size_display }}</b></span>
+            </div>
+            <div class="col-lg-3">
+                <small class="text-secondary"> PRICE </small><br>
+                <span><b>रु {{ job.price }}</b></span>
+            </div>
+            <div class="col-lg-3">
+                <small class="text-secondary"> QUANTITY </small><br>
+                <span><b>{{ job.quantity }}</b></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DELIVERY INFORMATION -->
+<b class="text-secondary">DELIVERY INFORMATION</b>
+<div class="card bg-white mt-2 mb-5">
+    <div class="card-body p-4">
+        <h4 class="mb-3">
+            Pickup
+        </h4>
+        <div class="row">
+            <div class="col-lg-4">
+                <b>Address</b><br>
+                <span>{{ job.pickup_address }}</span>
+            </div>
+            <div class="col-lg-4">
+                <b>{{ job.pickup_name }}</b><br>
+                <span>{{ job.pickup_phone }}</span>
+            </div>
+            <div id="pickup_photo" class="col-lg-4">
+                {% if job.pickup_photo %}
+                <img src="{{ job.pickup_photo.url }}" class="rounded-lg photo" width="130" height="130">
+                {% else %}
+                <div class="photo-blank">Pickup photo will appear here</div>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="my-4">
+        <h4 class="mb-3">
+            Delivery
+        </h4>
+        <div class="row">
+            <div class="col-lg-4">
+                <b>Address</b><br>
+                <span>{{ job.delivery_address }}</span>
+            </div>
+            <div class="col-lg-4">
+                <b>{{ job.delivery_name }}</b><br>
+                <span>{{ job.delivery_phone }}</span>
+            </div>
+            <div id="pickup_photo" class="col-lg-4">
+                {% if job.delivery_photo %}
+                <img src="{{ job.delivery_photo.url }}" class="rounded-lg photo" width="130" height="130">
+                {% else %}
+                <div class="photo-blank">Delivery photo will appear here</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAP AREA -->
+<div class="d-flex justify-content-between">
+    <b class="text-secondary">TRACK DELIVERY</b>
+    <div>
+        <span class="badge badge-warning"> {{ job.get_status_display }}</span>
+    </div>
+</div>
+<div class="card bg-white mt-2">
+    <div class="card-body p-0">
+        <div id="map" style="height: 500px;"></div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.min.css" />
+
+<script>
+    $(document).ready(function() {
+        // Extract pickup and delivery coordinates from the job object
+        var pickupCoords = [{{ job.pickup_lat }}, {{ job.pickup_lng }}];
+        var deliveryCoords = [{{ job.delivery_lat }}, {{ job.delivery_lng }}];
+
+        function displayTracedRouteMap(pickupCoords, deliveryCoords) {
+            var map = L.map('map');
+            
+            // Create an array of marker positions
+            var markerPositions = [pickupCoords, deliveryCoords];
+
+            // Calculate the bounds based on marker positions
+            var bounds = L.latLngBounds(markerPositions);
+
+            // Set the map view to fit the bounds
+            map.fitBounds(bounds);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Custom icon URLs
+            var pickupIconUrl = "{% static 'img/pickup.png' %}";
+            var deliveryIconUrl = "{% static 'img/delivery.png' %}";
+
+            // Define custom icons
+            var pickupIcon = L.icon({
+                iconUrl: pickupIconUrl,
+                iconSize: [32, 32], // adjust as needed
+                iconAnchor: [16, 32], // point of the icon which will correspond to marker's location
+                popupAnchor: [0, -32] // point from which the popup should open relative to the iconAnchor
+            });
+
+            var deliveryIcon = L.icon({
+                iconUrl: deliveryIconUrl,
+                iconSize: [32, 32], // adjust as needed
+                iconAnchor: [16, 32], // point of the icon which will correspond to marker's location
+                popupAnchor: [0, -32] // point from which the popup should open relative to the iconAnchor
+            });
+
+            // Add marker for pickup location with custom icon
+            L.marker(pickupCoords, { icon: pickupIcon }).addTo(map)
+                .bindPopup('Pickup Location')
+                .openPopup();
+
+            // Add marker for delivery location with custom icon
+            L.marker(deliveryCoords, { icon: deliveryIcon }).addTo(map)
+                .bindPopup('Delivery Location')
+                .openPopup();
+
+            // Create routing control and add it to the map
+            L.Routing.control({
+                waypoints: [
+                    L.latLng(pickupCoords[0], pickupCoords[1]),  // Pickup location
+                    L.latLng(deliveryCoords[0], deliveryCoords[1])   // Delivery location
+                ],
+                lineOptions: {
+                    styles: [{ color: '#007bff', opacity: 0.7, weight: 5 }]
+                }
+            }).addTo(map);
+        }
+
+        // Call the function to display the traced route map
+        displayTracedRouteMap(pickupCoords, deliveryCoords);
+    });
+</script>
+
+{% endblock %}

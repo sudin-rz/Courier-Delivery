@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load bootstrap4 %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<style>
+    #pills-tab a{
+        color: black;
+    }
+
+    #pills-tab a:hover{
+        color: orange;
+        text-decoration: none;
+    }
+
+    #pills-tab a.active{
+        color: orange;
+    }
+
+    #pickup-map,#delivery-map{
+        height:400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+
+        <!-- LEFT SIDE -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    ORDER SUMMARY
+                </div>
+                <div class="card-body">
+                    {% if not job %}
+                    <p>
+                        A summary of your order info will appear here.
+                    </p>
+                    {% else %}
+
+                    {% if step > 1 %}
+                    <p class="secondary"><small><b>ITEM DETAILS</b></small></p>
+                    <h4> {{ job.name }}</h4>
+                    <span> {{ job.quantity }} Item</span><br />
+                    <span> {{ job.get_size_display }} Job</span>
+                    {% endif %}
+
+                    {% if step > 2 %}
+                    <hr/>
+                    <p class="secondary"><small><b>PICKUP</b></small></p>
+                    <h4> {{ job.pickup_name }}</h4>
+                    <span> {{ job.pickup_address }} </span><br />
+                    {% endif %}
+
+
+                    {% if step > 3 %}
+                    <hr/>
+                    <p class="secondary"><small><b>DELIVERY</b></small></p>
+                    <h4> {{ job.delivery_name }}</h4>
+                    <span> {{ job.delivery_address }} </span><br />
+                    {% endif %}
+
+
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="col-lg-8">
+
+            <!-- Steps Tabs -->
+            <div class="card mb-5">
+                <div class="card-body">
+
+                    <ul class="nav nav-pills nav-justified align-items-center mb-3" id="pills-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                          <a class="{% if step == 1 %}active{% endif %}" id="pills-info-tab" data-toggle="pill" href="#pills-info" role="tab" aria-controls="pills-info" aria-selected="true">Item Info</a>
+                        </li>
+                        <i class="fas fa-chevron-right"></i>
+
+                        <li class="nav-item" role="presentation">
+                          <a class="{% if step == 2 %}active{% endif %}" id="pills-pickup-tab" data-toggle="pill" href="#pills-pickup" role="tab" aria-controls="pills-pickup" aria-selected="false">Pickup</a>
+                        </li>
+                        <i class="fas fa-chevron-right"></i>
+
+                        <li class="nav-item" role="presentation">
+                          <a class="{% if step == 3 %}active{% endif %}" id="pills-delivery-tab" data-toggle="pill" href="#pills-delivery" role="tab" aria-controls="pills-delivery" aria-selected="false">Delivery</a>
+                        </li>
+                        <i class="fas fa-chevron-right"></i>
+
+                        <li class="nav-item" role="presentation">
+                            <a class="{% if step == 4 %}active{% endif %}" id="pills-payment-tab" data-toggle="pill" href="#pills-payment" role="tab" aria-controls="pills-payment" aria-selected="false">Payment</a>
+                        </li>
+                        <i class="fas fa-chevron-right"></i>
+                    </ul>
+                    
+                </div>
+            </div>
+
+            <!-- Steps forms -->
+            <b>CREATE A JOB</b>
+            <div class="tab-content" id="pills-tabContent">
+
+                <!-- Step 1 -->
+                <div class="tab-pane fade {% if step == 1 %}show active{% endif %}" id="pills-info" role="tabpanel" aria-labelledby="pills-info-tab">
+                    <h1>Item Info</h1>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <b class="text-secondary"> Item Information</b><br>
+                        <div class="card bg-white mt-2 mb-5">
+                            <div class="card-body">
+                                {% csrf_token %}
+                                {% bootstrap_form step1_form %}
+                            </div>
+                        </div>
+                        <input type="hidden" name="step" value="1">
+                        <button type="submit" class="btn btn-warning"> Save & Continue</button>
+                    </form>
+                </div>
+
+
+<!-- Step 2 -->
+<div class="tab-pane fade {% if step == 2 %}show active{% endif %}" id="pills-pickup" role="tabpanel" aria-labelledby="pills-pickup-tab">
+    <h1>Pickup</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <b class="text-secondary"> Pickup Information</b><br>
+        <div class="card bg-white mt-2 mb-5">
+            <div class="card-body">
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="pickup_address">Pickup address</label>
+                            <!-- Render pickup_address field -->
+                            <input type="text" class="form-control" id="pickup_address" name="pickup_address" placeholder="Enter pickup address" value="{{ step2_form.pickup_address.value }}" autocomplete="off">
+                        </div>
+                        {% csrf_token %}
+                        {% bootstrap_form step2_form exclude='pickup_lat, pickup_lng, pickup_address' %}
+                        <input hidden id="pickup_lat" name="pickup_lat" value="{{ job.pickup_lat }}" />
+                        <input hidden id="pickup_lng" name="pickup_lng" value="{{ job.pickup_lng }}">
+
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div id="pickup-map" style="height: 270px;"></div>
+                        <div id="pickup-infowindow-content">
+                           <img src="" width="16" height="16" id="pickup-place-icon" />
+                          <span id="pickup-place-name" class="title"></span><br />
+                          <span id="pickup-place-address"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <input type="hidden" name="step" value="2">
+        <button type="button" class="btn btn-outline-warning" onclick="$('#pills-info-tab').tab('show');"> Back </button>
+        <button type="submit" class="btn btn-warning"> Save & Continue</button>
+    </form>
+</div>
+
+                                     
+
+                <!-- Step 3 -->
+                <div class="tab-pane fade {% if step == 3 %}show active{% endif %}" id="pills-delivery" role="tabpanel" aria-labelledby="pills-delivery-tab">
+                    <h1>Delivery</h1>
+                    <form method="POST" enctype="multipart/form-data">
+                        <b class="text-secondary"> Delivery Information</b><br>
+                        <div class="card bg-white mt-2 mb-5">
+                            <div class="card-body">
+                
+                                <div class="row">
+                                    <div class="col-lg-8">
+                                        <div class="form-group">
+                                            <label for="pickup_address">Delivery address</label> 
+                                           
+                                             <input type="text" class="form-control" id="delivery_address" name="delivery_address" placeholder="Enter delivery address" value="{{ step2_form.delivery_address.value }}" autocomplete="off">
+                                        </div>
+                                        {% csrf_token %}
+                                        {% bootstrap_form step3_form exclude='delivery_lat, delivery_lng, delivery_address' %}
+                                        <input hidden id="delivery_lat" name="delivery_lat" value="{{ job.delivery_lat }}" />
+                                        <input hidden id="delivery_lng" name="delivery_lng" value="{{ job.delivery_lng }}">
+                
+                                    </div>
+                
+                                    <div class="col-lg-4">
+                                        <div id="delivery-map" style="height: 270px;"></div>
+                                        <div id="delivery-infowindow-content">
+                                           <img src="" width="16" height="16" id="delivery-place-icon" />
+                                          <span id="delivery-place-name" class="title"></span><br />
+                                          <span id="delivery-place-address"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                
+                            </div>
+                        </div>
+                        <input type="hidden" name="step" value="3">
+                        <button type="button" class="btn btn-outline-warning" onclick="$('#pills-info-tab').tab('show');"> Back </button>
+                        <button type="submit" class="btn btn-warning"> Save & Continue</button>
+                    </form>
+
+
+                </div>
+
+
+                <!-- Step 4 -->
+                <div class="tab-pane fade {% if step == 4 %}show active{% endif %}" id="pills-payment" role="tabpanel" aria-labelledby="pills-payment-tab">
+                    <h1>Payment</h1>
+
+                    <form method="POST">
+                        <b class="text-secondary"> Payment Method </b>
+                        <div class="card-bg-white mt-2 mb-5">
+                            <div class="card-body">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label> Your Credit/Debit Card</label>
+                                    <input class="form-control" value="**** **** **** {{ request.user.customer.stripe_card_last4 }} " disabled>
+                                </div>
+
+                                <div class="form-group">
+                                    <label >Price(in Rs) </label>
+                                    <input class="form-control" value="{{ job.price }}" disabled>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="step" value="4">
+                        <button type="button" class="btn btn-outline-warning" onclick="$('#pills-delivery-tab').tab('show');"> Back </button>
+                        <button type="submit" class="btn btn-warning"> Create Order </button>
+                        </div>
+                    </form>
+                </div>
+                
+              </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
+    // Initialize Leaflet map with default location set to Kathmandu
+    var map = L.map('pickup-map').setView([27.7172, 85.324], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Initialize autocomplete for pickup address field
+    $(function () {
+        $("#pickup_address").autocomplete({
+            source: function (request, response) {
+                // Perform AJAX request to fetch autocomplete suggestions based on user input
+                $.ajax({
+                    url: "https://nominatim.openstreetmap.org/search",
+                    dataType: "json",
+                    data: {
+                        q: request.term,
+                        format: "json"
+                    },
+                    success: function (data) {
+                        console.log(data); // Log the response data to the console
+                        // Map the response data to format expected by autocomplete widget
+                        var mappedData = $.map(data, function (item) {
+                            return {
+                                label: item.display_name,
+                                value: item.display_name,
+                                latitude: item.lat,
+                                longitude: item.lon
+                            };
+                        });
+                        response(mappedData);
+                    }
+                });
+            },
+            minLength: 2,  // Minimum characters before autocomplete suggestions are shown
+            select: function (event, ui) {
+                // Set selected value in pickup address field
+                $("#pickup_address").val(ui.item.value);
+                // Update the map view to the selected location
+                map.setView([ui.item.latitude, ui.item.longitude], 13);
+                // Add a marker to the selected location on the map
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker([ui.item.latitude, ui.item.longitude]).addTo(map)
+                    .bindPopup('Selected Location: ' + ui.item.value)
+                    .openPopup();
+                // Set hidden input fields with latitudeand longitude values
+                $("#pickup_lat").val(ui.item.latitude);
+                $("#pickup_lng").val(ui.item.longitude);
+                return false;
+            }
+        });
+    });
+
+    // Set default marker and location to Kathmandu
+    var marker = L.marker([27.7172, 85.324]).addTo(map);
+    marker.bindPopup('Default Location: Kathmandu').openPopup();
+
+
+
+    //----------------------------Delivery Page
+    // Initialize Leaflet map with default location set to Kathmandu
+    var deliveryMap = L.map('delivery-map').setView([27.7172, 85.324], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(deliveryMap);
+
+    // Initialize autocomplete for delivery address field
+    $(function () {
+        $("#delivery_address").autocomplete({
+            source: function (request, response) {
+                // Perform AJAX request to fetch autocomplete suggestions based on user input
+                $.ajax({
+                    url: "https://nominatim.openstreetmap.org/search",
+                    dataType: "json",
+                    data: {
+                        q: request.term,
+                        format: "json"
+                    },
+                    success: function (data) {
+                        console.log(data); // Log the response data to the console
+                        // Map the response data to format expected by autocomplete widget
+                        var mappedData = $.map(data, function (item) {
+                            return {
+                                label: item.display_name,
+                                value: item.display_name,
+                                latitude: item.lat,
+                                longitude: item.lon
+                            };
+                        });
+                        response(mappedData);
+                    }
+                });
+            },
+            minLength: 2,  // Minimum characters before autocomplete suggestions are shown
+            select: function (event, ui) {
+                // Set selected value in delivery address field
+                $("#delivery_address").val(ui.item.value);
+                // Update the map view to the selected location
+                deliveryMap.setView([ui.item.latitude, ui.item.longitude], 13);
+                // Add a marker to the selected location on the map
+                if (deliveryMarker) {
+                    deliveryMap.removeLayer(deliveryMarker);
+                }
+                deliveryMarker = L.marker([ui.item.latitude, ui.item.longitude]).addTo(deliveryMap)
+                    .bindPopup('Selected Location: ' + ui.item.value)
+                    .openPopup();
+                // Set hidden input fields with latitude and longitude values
+                $("#delivery_lat").val(ui.item.latitude);
+                $("#delivery_lng").val(ui.item.longitude);
+                return false;
+            }
+        });
+    });
+
+    // Set default marker and location to Kathmandu
+    var deliveryMarker = L.marker([27.7172, 85.324]).addTo(deliveryMap);
+    deliveryMarker.bindPopup('Default Location: Kathmandu').openPopup();
+</script>
+
+
+
+{% endblock %}
