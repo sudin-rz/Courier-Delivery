@@ -15,41 +15,51 @@
 <script>
     $(document).ready(function() {
         setTimeout(function() {
-            //Get available jobs via API
+            // Get available jobs via API
             fetch("{% url 'courier:available_jobs_api' %}")
             .then(response => response.json())
             .then(json => {
                 // Create an array to store all pickup coordinates
                 const pickupCoordinates = json.jobs.map(job => [job.pickup_lat, job.pickup_lng]);
-
-                // Create a LatLngBounds object to encompass all pickup coordinates
-                const bounds = L.latLngBounds(pickupCoordinates);
-
-                // Create the map centered at the center of the bounds
-                const map = L.map('map').fitBounds(bounds);
-
-                // Add tile layer
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-
-                // Loop through each job
-                json.jobs.forEach(job => {
-                    const position = { lat: job.pickup_lat, lng: job.pickup_lng };
-
-                    // Create a marker at the pickup location for each job
-                    var marker = L.marker(position)
-                        .addTo(map)
-                        .bindPopup(`<h6>PICKUP</h6><b>${job.name}</b><br>Distance: ${job.distance} km`)
-                        .on('click', function() {
-                            // Show job details in the card when marker is clicked
-                            showJobDetails(job);
-                        });
-                });
+    
+                // Filter out empty or invalid coordinates
+                const validCoordinates = pickupCoordinates.filter(coord => coord.every(val => typeof val === 'number' && !isNaN(val)));
+    
+                // Check if there are valid coordinates
+                if (validCoordinates.length > 0) {
+                    // Create a LatLngBounds object to encompass all pickup coordinates
+                    const bounds = L.latLngBounds(validCoordinates);
+    
+                    // Create the map centered at the center of the bounds
+                    const map = L.map('map').fitBounds(bounds);
+    
+                    // Add tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+    
+                    // Loop through each job
+                    json.jobs.forEach(job => {
+                        const position = { lat: job.pickup_lat, lng: job.pickup_lng };
+    
+                        // Create a marker at the pickup location for each job
+                        var marker = L.marker(position)
+                            .addTo(map)
+                            .bindPopup(`<h6>PICKUP</h6><b>${job.name}</b><br>Distance: ${job.distance} km`)
+                            .on('click', function() {
+                                // Show job details in the card when marker is clicked
+                                showJobDetails(job);
+                            });
+                    });
+                } else {
+                    console.error('No valid coordinates found.');
+                }
+            }).catch(error => {
+                console.error('Error fetching job data:', error);
             });
         }, 100); // Delay map initialization by 100 milliseconds
     });
-
+        
     function showJobDetails(job){
         $("#job-details").css("display", "block");
         $("#job-name").html(job.name);
@@ -60,6 +70,12 @@
         $("#pickup-address").html(job.pickup_address);
         $("#delivery-address").html(job.delivery_address);
         $("#price").html(job.price);
+
+        $("#job-details").on("click", function(){
+            window.location.href="/courier/jobs/available/" + job.id + "/";
+        })
+
+
     }
 </script>
 {% endblock %}
