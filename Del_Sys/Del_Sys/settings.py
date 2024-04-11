@@ -159,7 +159,7 @@ LOGIN_URL = "/admin/login/"
 # EMAIL_HOST_PASSWORD='Google99r@'
 # DEFAULT_FROM_EMAIL='Courier Delivery System <no-reply@courierdeliverysystem.localhost>'
 
-FIREBASE_ADMIN_CREDENTIAL=os.path.join(BASE_DIR,"courier-delivery-855e7-firebase-adminsdk-pwoz4-9d146f5a8e.json")
+FIREBASE_ADMIN_CREDENTIAL=os.path.join(BASE_DIR,"firebase-adminsdk-pwoz4.json")
 
 STRIPE_API_PUBLIC_KEY= "pk_test_51NxPPKSDZVcEfYeDW87Jqa2cfnkoscmF9g01ZLNh8iob07jGbThmSPRcC8Y5viCZMd16937VbS9OA78ckdMkQyDe00zCNAWcK7"
 

@@ -1,0 +1,108 @@
+{% extends 'courier/base.html' %}
+
+{% block head %}
+<!-- Include Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+    /* Set the map to fill its container */
+    #map {
+        flex:1;
+    }
+</style>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        setTimeout(function() {
+            //Get available jobs via API
+            fetch("{% url 'courier:available_jobs_api' %}")
+            .then(response => response.json())
+            .then(json => {
+                // Create an array to store all pickup coordinates
+                const pickupCoordinates = json.jobs.map(job => [job.pickup_lat, job.pickup_lng]);
+
+                // Create a LatLngBounds object to encompass all pickup coordinates
+                const bounds = L.latLngBounds(pickupCoordinates);
+
+                // Create the map centered at the center of the bounds
+                const map = L.map('map').fitBounds(bounds);
+
+                // Add tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Loop through each job
+                json.jobs.forEach(job => {
+                    const position = { lat: job.pickup_lat, lng: job.pickup_lng };
+
+                    // Create a marker at the pickup location for each job
+                    var marker = L.marker(position)
+                        .addTo(map)
+                        .bindPopup(`<h6>PICKUP</h6><b>${job.name}</b><br>Distance: ${job.distance} km`)
+                        .on('click', function() {
+                            // Show job details in the card when marker is clicked
+                            showJobDetails(job);
+                        });
+                });
+            });
+        }, 100); // Delay map initialization by 100 milliseconds
+    });
+
+    function showJobDetails(job){
+        $("#job-details").css("display", "block");
+        $("#job-name").html(job.name);
+        // Set the image source directly from the job.photo
+        $("#job-photo").attr('src', job.photo);
+        $("#distance").html(job.distance);
+        $("#duration").html(job.duration);
+        $("#pickup-address").html(job.pickup_address);
+        $("#delivery-address").html(job.delivery_address);
+        $("#price").html(job.price);
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column h-100" style="padding-bottom: 60px;">
+    <div id="map"></div>
+
+    <div id="job-details" class="card" style="display: none;">
+        <div class="card-body pt-2">
+            <div class="media">
+                <!-- Set the image size explicitly -->
+                <img id="job-photo" class="rounded-lg mr-3" width="50px" height="50px" src="{{ MEDIA_URL }}{{ job.photo }}" >
+                
+                <div class="media-body">
+                    <!-- name should go here -->
+                    <b id="job-name"></b>
+                    <div class="d-flex">
+                        <div class="flex-grow-1 mr-2">
+                            <small class="text-success">  
+                                <i class="fas fa-car"></i> <span id="distance"></span> km
+                                <i class="far fa-clock ml-2"></i> <span id="duration"></span> hours
+                            </small>
+
+                            <div class="d-flex aligh-items-center mt-2">                                
+                                <i class="fas fa-map-marker-alt"></i>
+                                <small id="pickup-address" class="text-secondary ml-2"><!-- pickupaddress here  --></small>
+                            </div>
+
+                            <div class="d-flex aligh-items-center mt-2">
+                                <i class="fas fa-flag-checkered"></i>
+                                <small id="delivery-address" class="text-secondary ml-2"><!-- deliveryaddress here  --></small>
+                            </div>
+
+                        </div>
+                        रु<h3 id="price"><!-- price here  --></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'courier/bottom_tabs.html' %}
+{% endblock %}
