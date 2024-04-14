@@ -1,0 +1,166 @@
+{% extends 'courier/base.html' %}
+{% load static %}
+
+{% block head %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+
+        if (!document.getElementById("map")){
+            return
+        }
+        // Extract pickup and delivery coordinates from the job object
+        var pickupCoords = [{{ job.pickup_lat }}, {{ job.pickup_lng }}];
+        var deliveryCoords = [{{ job.delivery_lat }}, {{ job.delivery_lng }}];
+
+        function displayTracedRouteMap(pickupCoords, deliveryCoords) {
+            var map = L.map('map');
+            
+            // Create an array of marker positions
+            var markerPositions = [pickupCoords, deliveryCoords];
+
+            // Calculate the bounds based on marker positions
+            var bounds = L.latLngBounds(markerPositions);
+
+            // Set the map view to fit the bounds
+            map.fitBounds(bounds);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Custom icon URLs
+            var pickupIconUrl = "{% static 'img/pickup.png' %}";
+            var deliveryIconUrl = "{% static 'img/delivery.png' %}";
+
+            // Define custom icons
+            var pickupIcon = L.icon({
+                iconUrl: pickupIconUrl,
+                iconSize: [32, 32], // adjust as needed
+                iconAnchor: [16, 32], // point of the icon which will correspond to marker's location
+                popupAnchor: [0, -32] // point from which the popup should open relative to the iconAnchor
+            });
+
+            var deliveryIcon = L.icon({
+                iconUrl: deliveryIconUrl,
+                iconSize: [32, 32], // adjust as needed
+                iconAnchor: [16, 32], // point of the icon which will correspond to marker's location
+                popupAnchor: [0, -32] // point from which the popup should open relative to the iconAnchor
+            });
+
+            // Add marker for pickup location with custom icon
+            L.marker(pickupCoords, { icon: pickupIcon }).addTo(map)
+                .bindPopup('Pickup Location')
+                .openPopup();
+
+            // Add marker for delivery location with custom icon
+            L.marker(deliveryCoords, { icon: deliveryIcon }).addTo(map)
+                .bindPopup('Delivery Location')
+                .openPopup();
+
+            // Create routing control and add it to the map
+
+        }
+
+        // Call the function to display the traced route map
+        displayTracedRouteMap(pickupCoords, deliveryCoords);
+    });
+</script>
+
+
+
+<!-- Include Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+    /* Set the map to fill its container */
+    #map {
+        flex:1;
+    }
+
+    small{
+        font-size: 12px;
+        line-height: 1.2rem;
+    }
+
+    .card{
+        border:none;
+    }
+
+    #job-details{
+        display: none;
+    }
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-column h-100" style="padding-bottom: 60px;">
+    <div class="text-center">
+        <div class="btn-group mt-1 mb-1 align-item-center" role="group">
+            <a href="#" class="btn btn-warning">Current Job</a>
+            <a href="#" class="btn btn-outline-warning">Archived Job</a>
+        </div>
+    </div>
+    {% if job %}
+
+    <div id="map"></div>    
+
+    <div class="card" >
+        <div class="card-body pt-2">
+            <div class="media">
+                <!-- Set the image size explicitly -->
+                <img class="rounded-lg mr-3" width="50px" height="50px" src="{{ job.photo.url }}" >
+                
+                <div class="media-body">
+                    <!-- name should go here -->
+                    <b> {{ job.name }}</b>
+                    <div class="d-flex">
+                        <div class="flex-grow-1 mr-2">
+                            <small class="text-success">  
+                                <i class="fas fa-car"></i> <span >{{ job.distance }}</span> km
+                                <i class="far fa-clock ml-2"></i> <span>{{ job.duration }}</span> hours
+                            </small>
+
+                            <div class="d-flex aligh-items-center mt-2">                                
+                                <i class="fas fa-map-marker-alt"></i>
+                                <small  class="text-secondary ml-2"><!-- pickupaddress here  -->{{ job.pickup_address }}</small>
+                            </div>
+
+                            <div class="d-flex aligh-items-center mt-2">
+                                <i class="fas fa-flag-checkered"></i>
+                                <small class="text-secondary ml-2"><!-- deliveryaddress here  -->{{ job.delivery_address }}</small>
+                            </div>
+
+                        </div>
+                        रु<h3>{{ job.price }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{% url 'courier:current_job_take_photo' job.id %}" class="btn btn-block btn-warning btn-md mt-3">
+                Pickup
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="text-center" id="main">
+        <p> You have no job now. Let's pick a new one</p>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% include 'courier/bottom_tabs.html' %}
+{% endblock %}

@@ -125,7 +125,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 
 <script>
     $(document).ready(function() {
@@ -179,15 +180,7 @@
                 .openPopup();
 
             // Create routing control and add it to the map
-            L.Routing.control({
-                waypoints: [
-                    L.latLng(pickupCoords[0], pickupCoords[1]),  // Pickup location
-                    L.latLng(deliveryCoords[0], deliveryCoords[1])   // Delivery location
-                ],
-                lineOptions: {
-                    styles: [{ color: '#007bff', opacity: 0.7, weight: 5 }]
-                }
-            }).addTo(map);
+
         }
 
         // Call the function to display the traced route map
