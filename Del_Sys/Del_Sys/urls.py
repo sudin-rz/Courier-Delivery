@@ -27,6 +27,9 @@ courier_urlpatterns=[
     path('jobs/available/<id>/',courier_views.available_job_page, name="available_job"),
     path('jobs/current/',courier_views.current_job_page, name="current_job"),
     path('jobs/current/<id>/take_photo/',courier_views.current_job_take_photo_page, name="current_job_take_photo"),
+    path('jobs/complete/',courier_views.job_complete_page, name="job_complete"),
+    path('jobs/archived/',courier_views.archived_jobs_page, name="archived_jobs"),
+    path('profile/',courier_views.profile_page, name="profile"),
 
 
     path('api/jobs/available/',courier_apis.available_jobs_api, name="available_jobs_api"),

@@ -56,7 +56,7 @@ class Job(models.Model):
         (PROCESSING_STATUS,'Processing'),
         (PICKING_STATUS,'Picking'),
         (DELIVERING_STATUS,'Delivering'),
-        (COMPLETED_STATUS,'Completing'),
+        (COMPLETED_STATUS,'Completed'),
         (CANCELED_STATUS,'Cancelled'),
     )
 
